@@ -1,0 +1,6 @@
+Everyday at 6 AM
+
+We Scan All Teams - if we have team id already we dont insert
+We Scan All Players on Team - if player id already exists we dont insert. 
+We Get Games for each team - if we already have a game id we dont insert
+We get Stats for each game if we already have a game id for that game we dont insert

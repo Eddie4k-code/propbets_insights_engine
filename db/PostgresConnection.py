@@ -1,4 +1,3 @@
-from multiprocessing import context
 from db.initate_connection_interface import InitiateConnectionInterface
 from psycopg2 import pool
 from contextlib import contextmanager
@@ -13,7 +12,7 @@ class PostgresConnection(InitiateConnectionInterface):
         self.connection_string = connection_string
         self.minconn = minconn
         self.maxconn = maxconn
-        self.connection_pool = None
+        self.pool = None
 
     def initiate_connection(self):
         self.pool = pool.SimpleConnectionPool(self.minconn, self.maxconn, self.connection_string)
@@ -33,6 +32,7 @@ class PostgresConnection(InitiateConnectionInterface):
         conn = self.pool.getconn()
         try:
             yield conn
+            conn.commit()
         except Exception as e:
             conn.rollback()
             logger.error(f"Error occurred: {e}")
