@@ -18,10 +18,11 @@ CREATE TABLE IF NOT EXISTS daily_prop_snapshots (
     outcome_name TEXT NOT NULL, -- e.g Over / Under / Yes / No
     line NUMERIC,
     price INT,
+    provider TEXT NOT NULL,
 
     PRIMARY KEY (
         snapshot_ts, sport_key, event_id, book_key, market_key,
-        COALESCE(player_key,''), outcome_name, COALESCE(line, -999999)
+        COALESCE(player_key,''), outcome_name, COALESCE(line, -999999), provider
     )
 );
 

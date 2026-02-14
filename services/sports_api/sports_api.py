@@ -83,7 +83,9 @@ class TheOddsAPI(SportsAPIInterface):
 
         logger.info(f"Fetching prop bets for event {event_id} in {region} for market {market}")
 
+        
         event_props = await self._get(endpoint)
+        
 
         return event_props
 

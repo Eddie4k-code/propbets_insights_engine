@@ -12,8 +12,8 @@ class PropSnapshotsRepository(PostgresPropSnapshotsRepositoryInterface):
         with self.db.get_cursor() as cursor:
             cursor.execute(
                 """
-                INSERT INTO prop_snapshots (sport_key, season, game_id, player_id, player_name, team_id, team_name, prop_type, prop_value, odds)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO prop_snapshots (sport_key, season, game_id, player_id, player_name, team_id, team_name, prop_type, prop_value, odds, provider)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     prop_snapshot.sport_key,
@@ -25,7 +25,8 @@ class PropSnapshotsRepository(PostgresPropSnapshotsRepositoryInterface):
                     prop_snapshot.team_name,
                     prop_snapshot.prop_type,
                     prop_snapshot.prop_value,
-                    prop_snapshot.odds
+                    prop_snapshot.odds,
+                    prop_snapshot.provider
                 )
             )
         

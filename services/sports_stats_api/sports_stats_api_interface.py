@@ -14,5 +14,5 @@ class SportsStatsAPIInterface(ABC):
         pass
 
     @abstractmethod
-    async def get_players_stats_from_game(self, player: int, game: int, season: int):
+    async def get_players_stats_from_game(self, player: int, season: int):
         pass

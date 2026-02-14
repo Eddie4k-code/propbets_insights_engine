@@ -5,6 +5,7 @@ import asyncio
 import logging
 from repositories.prop_snapshots_repository_interface import PostgresPropSnapshotsRepositoryInterface
 import os
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -30,24 +31,23 @@ class PropIngestor(PropIngestorInterface):
             List of all props fetched across all events
         """
         logger.info(f"Starting prop ingestion for {len(events)} events with {len(markets)} markets")
-        
-        # Create tasks for all events in parallel
-        tasks = [
-            self._fetch_event_props(event, markets, sport, region)
-            for event in events
-        ]
-        
-        # Execute all events in parallel
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        
-        # Handle results and errors
+
+        # Batch requests in groups of 10 per second, with a 12-second wait between batches
+        batch_size = 30
         all_props = []
-        for event, result in zip(events, results):
-            if isinstance(result, Exception):
-                logger.error(f"Failed to fetch props for event {event.get('id')}: {str(result)}")
-            else:
-                all_props.extend(result)
-        
+        for i in range(0, len(events), batch_size):
+            batch = events[i:i+batch_size]
+            tasks = [self._fetch_event_props(event, markets, sport, region) for event in batch]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for event, result in zip(batch, results):
+                if isinstance(result, Exception):
+                    logger.error(f"Failed to fetch props for event {event.get('id')}: {str(result)}")
+                else:
+                    all_props.extend(result)
+            if i + batch_size < len(events):
+                logger.info(f"Waiting 12 seconds before next batch to respect rate limits...")
+                await asyncio.sleep(12)
+
         logger.info(f"Completed raw prop ingestion: {len(all_props)} props fetched")
 
         logger.info("Starting prop processing")
@@ -81,7 +81,7 @@ class PropIngestor(PropIngestorInterface):
         
         try:
             # Add small delay to respect rate limits
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(7)
             
             props = await self.BetAPI.get_props_for_event(
                 sport=sport,
@@ -175,6 +175,32 @@ class PropIngestor(PropIngestorInterface):
                         })
 
         return transformed_props
+    
+
+    def insert_transformed_props(self, transformed_props):
+        """
+        Inserts transformed props into the database using the prop snapshots repository.
+        """
+        for prop in transformed_props:
+            try:
+                self.prop_snapshots_repository.insert_prop_snapshot(
+                    snapshot_ts=prop["snapshot_ts"],
+                    sport_key=prop["sport_key"],
+                    event_id=prop["event_id"],
+                    book_key=prop["book_key"],
+                    market_key=prop["market_key"],
+                    player_key=prop["player_key"],
+                    outcome_name=prop["outcome_name"],
+                    line=prop["line"],
+                    price=prop["price"],
+                    provider="sports-api"
+                )
+                logger.info(f"Inserted prop for event {prop['event_id']} into the database.")
+            except Exception as e:
+                logger.error(f"Error inserting prop for event {prop['event_id']}: {str(e)}")
+                raise e
+
+
 
 
         

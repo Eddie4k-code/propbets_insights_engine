@@ -27,7 +27,8 @@ CREATE TABLE IF NOT EXISTS player_game_stats (
     turnovers INT,
     blocks INT,
     plus_minus INT,
-    PRIMARY KEY (sport_key, season, game_id, player_id)
+    provider TEXT NOT NULL,
+    PRIMARY KEY (sport_key, season, game_id, player_id, provider)
 );
 
 CREATE INDEX IF NOT EXISTS idx_player_stats_by_player 

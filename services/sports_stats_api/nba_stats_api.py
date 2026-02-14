@@ -1,6 +1,6 @@
 import http
-from sports_stats_api.sports_stats_api_interface import SportsStatsAPIInterface
-from sports_stats_api.sports_stats_api_config import SportsAPIConfig
+from services.sports_stats_api.sports_stats_api_interface import SportsStatsAPIInterface
+from services.sports_stats_api.sports_stats_api_config import SportsAPIConfig
 from http_client.requests_http_client import RequestsHTTPClient
 from http_client.http_client import HTTPClientInterface
 
@@ -30,8 +30,8 @@ class NBAStatsAPI(SportsStatsAPIInterface):
         data = await self.http_client.get(self.sports_api_config.base_url + "/games", params={"season": season})
         return data
     
-    async def get_players_stats_from_game(self, player_id: int, game_id: int, season: int):
-        data = await self.http_client.get(self.sports_api_config.base_url + "/players" + "/statistics", params={"player": player_id, "game": game_id, "season": season})
+    async def get_players_stats_from_game(self, player: int, season: int):
+        data = await self.http_client.get(self.sports_api_config.base_url + "/players" + "/statistics", params={"player": player, "season": season})
         return data
 
 

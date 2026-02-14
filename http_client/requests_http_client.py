@@ -1,3 +1,4 @@
+import asyncio
 import httpx
 from http_client.http_client import HTTPClientInterface
 import requests
@@ -18,9 +19,27 @@ class RequestsHTTPClient(HTTPClientInterface):
             if not response.text or response.text.strip() == "":
                 return []  # Return empty list for empty responses
             
+            """ Handle rate limiting with retries and exponential backoff """
+            if response.status_code == 429:
+                retries = 10
+                logger.info(f"Rate limit exceeded for {endpoint}. Response: {response.text}")
+                
+                for retry in range(retries):
+                    wait_time = 2 ** retry  # Exponential backoff
+                    logger.info(f"Retrying in {wait_time} seconds... (Attempt {retry + 1}/{retries})")
+                    await asyncio.sleep(wait_time)
+                    
+                    retry_response = await self.client.get(endpoint, params=params)
+                    
+                    if retry_response.status_code == 200:
+                        return retry_response.json()
+                    elif retry_response.status_code != 429:
+                        logger.error(f"GET request to {endpoint} returned status code {retry_response.status_code} on retry")
+                        raise Exception(f"GET request to {endpoint} returned status code {retry_response.status_code, retry_response.text} on retry")
+                    
             if response.status_code != 200:
-                logger.error(f"GET request to {endpoint} returned status code {response.status_code}")
-                raise Exception(f"GET request to {endpoint} returned status code {response.status_code, response.text}")
+                logger.error(f"GET request to {endpoint} returned status code {response.status_code}. Response: {response.text}")
+
             return response.json()
         
         except Exception as e:
