@@ -6,11 +6,11 @@ class PipelineRunnerInterface(ABC):
         pass
 
     @abstractmethod
-    async def run_team_pipeline(self, season: int):
+    async def run_team_pipeline(self):
         pass
 
     @abstractmethod
-    async def run_players_pipeline(self, team: int, season: int):
+    async def run_players_pipeline(self, season: int):
         pass
 
     @abstractmethod
@@ -18,5 +18,9 @@ class PipelineRunnerInterface(ABC):
         pass
 
     @abstractmethod
-    async def run_player_stats_pipeline(self, season: int, player: int):
+    async def run_player_stats_pipeline(self, season: int):
+        pass
+
+    @abstractmethod
+    async def run_hit_rates_pipeline(self):
         pass

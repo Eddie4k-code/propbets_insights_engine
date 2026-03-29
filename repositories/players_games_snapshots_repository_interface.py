@@ -33,3 +33,12 @@ class PlayersGamesSnapshotsRepositoryInterface(ABC):
         provider: str
     ):
         pass
+
+
+    def get_player_game_snapshot(self, game_id: int, player_id: int, season: int):
+        pass
+
+    def get_player_game_snapshots_latest(self, player_id: int):
+        pass
+
+    

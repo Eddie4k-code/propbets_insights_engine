@@ -1,4 +1,4 @@
-class SportsAPIConfig:
+class SportsStatsAPIConfig:
     """
     Class for holding config related to the Sports Stats API.
     """

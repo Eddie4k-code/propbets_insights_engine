@@ -1,0 +1,31 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.log
+.env
+.venv/
+venv/
+.idea/
+.vscode/
+*.egg-info/
+dist/
+build/
+node_modules/
+*.swp
+.DS_Store
+migrations/*.sql
+
+# Ignore test output
+*.coverage
+htmlcov/
+.coverage
+
+# Ignore local config
+local_settings.py
+settings_local.py
+
+# Ignore docker files
+Dockerfile

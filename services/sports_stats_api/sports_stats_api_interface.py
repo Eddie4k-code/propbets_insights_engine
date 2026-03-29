@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 class SportsStatsAPIInterface(ABC):
     @abstractmethod
-    async def get_teams(self, season: int):
+    async def get_teams(self):
         pass
     
     @abstractmethod

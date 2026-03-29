@@ -7,13 +7,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 class RequestsHTTPClient(HTTPClientInterface):
-    def __init__(self, timeout: int = 30):
+    def __init__(self, timeout: int = 30, headers: dict = None):
         super().__init__()
         self.client = httpx.AsyncClient(timeout=timeout)
+        self.headers = headers
     
     async def get(self, endpoint: str, params: dict = None):
         try:
-            response = await self.client.get(endpoint, params=params)
+            response = await self.client.get(endpoint, params=params, headers=self.headers)
             
             # Handle empty response
             if not response.text or response.text.strip() == "":
@@ -29,7 +30,7 @@ class RequestsHTTPClient(HTTPClientInterface):
                     logger.info(f"Retrying in {wait_time} seconds... (Attempt {retry + 1}/{retries})")
                     await asyncio.sleep(wait_time)
                     
-                    retry_response = await self.client.get(endpoint, params=params)
+                    retry_response = await self.client.get(endpoint, params=params, headers=self.headers)
                     
                     if retry_response.status_code == 200:
                         return retry_response.json()

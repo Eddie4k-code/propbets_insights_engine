@@ -1,6 +1,6 @@
 import http
 from services.sports_stats_api.sports_stats_api_interface import SportsStatsAPIInterface
-from services.sports_stats_api.sports_stats_api_config import SportsAPIConfig
+from services.sports_stats_api.sports_stats_api_config import SportsStatsAPIConfig
 from http_client.requests_http_client import RequestsHTTPClient
 from http_client.http_client import HTTPClientInterface
 
@@ -12,26 +12,25 @@ from http_client.http_client import HTTPClientInterface
 
 class NBAStatsAPI(SportsStatsAPIInterface):
 
-    def __init__(self, sports_api_config: SportsAPIConfig, http_client: HTTPClientInterface):
-        self.sports_api_config = sports_api_config
+    def __init__(self, config: SportsStatsAPIConfig, http_client: HTTPClientInterface):
+        self.config = config
         self.http_client = http_client
 
     #/teams
-    async def get_teams(self, season: int):
-        data = await self.http_client.get(self.sports_api_config.base_url + "/teams", params={"season": season})
-        
+    async def get_teams(self):
+        data = await self.http_client.get(self.config.base_url + "/teams")
         return data
     
-    async def get_players_on_team(self, teamId: int, season: int):
-        data = await self.http_client.get(self.sports_api_config.base_url + "/players", params={"team": teamId, "season": season})
+    async def get_players_on_team(self, team: int, season: int):
+        data = await self.http_client.get(self.config.base_url + "/players", params={"season": season, "team": team})
         return data
 
     async def get_games_from_season(self, season: int):
-        data = await self.http_client.get(self.sports_api_config.base_url + "/games", params={"season": season})
+        data = await self.http_client.get(self.config.base_url + "/games", params={"season": season})
         return data
     
     async def get_players_stats_from_game(self, player: int, season: int):
-        data = await self.http_client.get(self.sports_api_config.base_url + "/players" + "/statistics", params={"player": player, "season": season})
+        data = await self.http_client.get(self.config.base_url + "/players" + "/statistics", params={"id": player, "season": season})
         return data
 
 

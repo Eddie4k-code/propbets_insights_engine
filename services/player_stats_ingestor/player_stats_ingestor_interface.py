@@ -6,7 +6,7 @@ class PlayerStatsIngestorInterface(ABC):
         pass
 
     @abstractmethod
-    async def get_players_on_team(self, team: int, season: int):
+    async def get_players_on_team(self, season: int):
         pass
 
     @abstractmethod
@@ -14,5 +14,5 @@ class PlayerStatsIngestorInterface(ABC):
         pass
 
     @abstractmethod
-    async def get_stats_from_game(self, season: int, player: int):
+    async def get_stats_from_game(self, season: int):
         pass

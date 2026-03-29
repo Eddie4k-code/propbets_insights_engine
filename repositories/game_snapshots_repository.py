@@ -13,7 +13,7 @@ class PostgresGameSnapshotsRepository(GameSnapshotsRepositoryInterface):
         with self.db.get_cursor() as cursor:
             cursor.execute(
                 """
-                INSERT INTO game_snapshots (sport_key, season, game_id, game_ts, status, home_team_id, away_team_id, home_score, away_score, provider)
+                INSERT INTO public.games_snapshots (sport_key, season, game_id, game_ts, status, home_team_id, away_team_id, home_score, away_score, provider)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (sport_key, season, game_id, provider) 
                 DO UPDATE SET 
@@ -22,7 +22,7 @@ class PostgresGameSnapshotsRepository(GameSnapshotsRepositoryInterface):
                     home_team_id = EXCLUDED.home_team_id,
                     away_team_id = EXCLUDED.away_team_id,
                     home_score = EXCLUDED.home_score,
-                    away_score = EXCLUDED.away_score,
+                    away_score = EXCLUDED.away_score
                 """,
                 (sport_key, season, game_id, game_ts, status, home_team_id, away_team_id, home_score, away_score, provider)
             )

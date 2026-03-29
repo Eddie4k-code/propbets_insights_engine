@@ -32,6 +32,7 @@ class PropIngestor(PropIngestorInterface):
         """
         logger.info(f"Starting prop ingestion for {len(events)} events with {len(markets)} markets")
 
+        # NOTE - We need to make the underlying http client aiohttp to be concurrent.
         # Batch requests in groups of 10 per second, with a 12-second wait between batches
         batch_size = 30
         all_props = []
@@ -116,7 +117,7 @@ class PropIngestor(PropIngestorInterface):
 
         return transformed_props
 
-        
+
     def filter_by_bookie(self, props, allowed_bookies):
         """
         Filters props by allowed bookies.
@@ -161,17 +162,18 @@ class PropIngestor(PropIngestorInterface):
                     for outcome in market.get("outcomes", []):
                         transformed_props.append({
                             "snapshot_date": datetime.datetime.now(datetime.timezone.utc),
-                            "snapshot_ts": datetime.datetime.now(datetime.timezone.utc).timestamp(),
+                            "snapshot_ts": datetime.datetime.now(datetime.timezone.utc),
                             "sport_key": event.get("sport_key"),
                             "event_id": event.get("event_id"),
                             "event_start_time": event.get("event_start_time"),
                             "book_key": bookmaker.get("key"),
                             "market_key": market.get("key"),
-                            "player_key": outcome.get(f"{event.get('sport_title').lower()}:{outcome.get('description')}"),
-                            "player_name": outcome.get("name"),
-                            "outcome_name": outcome.get("description"), #Over Under Yes / No
+                            "player_key": f"{event.get('sport_title').lower()}:{outcome.get('description').lower()}",
+                            "player_name": outcome.get("description").lower(),
+                            "outcome_name": outcome.get("name").lower(), #Over Under Yes / No
                             "line": outcome.get("point"),
-                            "price": outcome.get("price")
+                            "price": outcome.get("price"),
+                            "market_last_update": market.get("last_update")
                         })
 
         return transformed_props
@@ -183,18 +185,25 @@ class PropIngestor(PropIngestorInterface):
         """
         for prop in transformed_props:
             try:
-                self.prop_snapshots_repository.insert_prop_snapshot(
-                    snapshot_ts=prop["snapshot_ts"],
-                    sport_key=prop["sport_key"],
-                    event_id=prop["event_id"],
-                    book_key=prop["book_key"],
-                    market_key=prop["market_key"],
-                    player_key=prop["player_key"],
-                    outcome_name=prop["outcome_name"],
-                    line=prop["line"],
-                    price=prop["price"],
-                    provider="sports-api"
-                )
+
+                prop_dict = {
+                    "snapshot_date": prop["snapshot_date"],
+                    "snapshot_ts": prop["snapshot_ts"],
+                    "sport_key": prop["sport_key"],
+                    "event_id": prop["event_id"],
+                    "event_start_time": prop["event_start_time"],
+                    "book_key": prop["book_key"],
+                    "market_key": prop["market_key"],
+                    "player_key": prop["player_key"],
+                    "player_name": prop["player_name"],
+                    "outcome_name": prop["outcome_name"],
+                    "line": prop["line"],
+                    "price": prop["price"],
+                    "provider": "odds_api",
+                    "market_last_update": prop["market_last_update"]
+                }
+
+                self.prop_snapshots_repository.insert_prop_snapshot(prop_dict)
                 logger.info(f"Inserted prop for event {prop['event_id']} into the database.")
             except Exception as e:
                 logger.error(f"Error inserting prop for event {prop['event_id']}: {str(e)}")

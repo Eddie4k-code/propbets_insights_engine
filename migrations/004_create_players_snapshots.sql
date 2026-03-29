@@ -8,9 +8,9 @@ CREATE TABLE IF NOT EXISTS player_snapshots (
    first_name TEXT NOT NULL,
    last_name TEXT NOT NULL,
    provider TEXT NOT NULL,
-   PRIMARY KEY (sport_key, season, lower(first_name), lower(last_name), provider
+   PRIMARY KEY (sport_key, season, first_name, last_name, provider)
 );
 
-CREATE INDEX IF NOT EXISTS idx_players_name ON player_snapshots (player_id, season, lower(first_name), lower(last_name));
+CREATE INDEX IF NOT EXISTS idx_players_name ON player_snapshots (player_id, season, first_name, last_name);
 
 COMMIT;

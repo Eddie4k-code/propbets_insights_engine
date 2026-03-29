@@ -1,3 +1,5 @@
+from operator import concat
+
 from services.sports_stats_api.sports_stats_api_interface import SportsStatsAPIInterface
 from repositories.team_snapshots_repository_interface import TeamSnapshotsRepositoryInterface
 from repositories.player_snapshots_repository_interface import PlayerSnapshotsRepositoryInterface
@@ -9,7 +11,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class NBAPlayerStatsIngestor():
+class UFCPlayerStatsIngestor():
     def __init__(
             self, sports_stats_api: SportsStatsAPIInterface,  
             team_snapshots_repository: TeamSnapshotsRepositoryInterface,
@@ -22,77 +24,56 @@ class NBAPlayerStatsIngestor():
         self.player_snapshots_repository = player_snapshots_repository
         self.game_snapshots_repository = game_snapshots_repository
         self.players_games_snapshots_repository = players_games_snapshots_repository
-    async def ingest_teams(self):
-        """
-        Ingests NBA Teams into the database. Retrieves team data from the sports stats API and stores it in the team snapshots repository.
-        """
-        data = await self.sports_stats_api.get_teams()
-        logging.info(f"Retrieved {len(data['response'])} teams.")
-        
-        for team in data["response"]:
-            try:
-                self.team_snapshots_repository.insert_team_snapshot('nba', team['id'], team['name'], team['code'], 'sports-api')
-                logging.info(f"Inserted team {team['name']} (ID: {team['id']}) into the database.")
-            except Exception as e:
-                logging.error(f"Error inserting team {team['name']} (ID: {team['id']}): {e}")
-                raise e
 
+    async def ingest_teams(self):
+        pass
 
     async def get_players_on_team(self, season: int):
         """
-        Ingests NBA Players for a given team and season into the database. Retrieves player data from the sports stats API and stores it in the player snapshots repository.
+        Ingests UFC Players for a given team and season into the database. Retrieves player data from the sports stats API and stores it in the player snapshots repository.
         """
 
-        teams = self.team_snapshots_repository.get_all_team_snapshots()
-        
-        teams_dict = [
-            {
-                "team_id": team[1],
-            }
-            for team in teams if team[0] == 'nba'
-        ]
+        data = await self.sports_stats_api.get_players_on_team(season=season)
+        logging.info(f"Retrieved {len(data['response'])} players for season {season}.")
 
-        for team in teams_dict:
-            data = await self.sports_stats_api.get_players_on_team(team['team_id'], season)
-            logging.info(f"Retrieved {len(data['response'])} players for team ID {team['team_id']} in season {season}.")
-
-            for player in data['response']:
-                try:
-                    self.player_snapshots_repository.insert_player_snapshot('nba', season, team['team_id'], player['id'], player['firstname'].lower(), player['lastname'].lower(), 'sports-api')
-                    logging.info(f"Inserted player {player['firstname']} {player['lastname']} (ID: {player['id']}) into the database.")
-                except Exception as e:
-                    logging.error(f"Error inserting player {player['firstname']} {player['lastname']} (ID: {player['id']}): {e}")
-                    raise e
+        for fight in data['response']:
+            try:
+                for key, value in fight["fighters"].items():
+                    self.player_snapshots_repository.insert_player_snapshot('ufc', season, value['id'], value['id'], value['name'].split(" ")[0].lower(), value['name'].split(" ")[1].lower(), 'sports-api')
+                    logging.info(f"Inserted player {value['name']} (ID: {value['id']}) into the database.")
+            except Exception as e:
+                logging.error(f"Error inserting player {value['name']} (ID: {value['id']}): {e}")
+                raise e
 
     async def get_season_games(self, season: int):
         """
-        Ingests NBA Games for a given season into the database. Retrieves game data from the sports stats API and stores it in the game snapshots repository. Only games with a status of "Finished" are ingested to ensure that complete data is stored.
+        Ingests UFC Games for a given season into the database. Retrieves game data from the sports stats API and stores it in the game snapshots repository. Only games with a status of "Finished" are ingested to ensure that complete data is stored.
         """
         data = await self.sports_stats_api.get_games_from_season(season=season)
-        logging.info(f"Retrieved {len(data['response'])} games for in season {season}.")
+        logging.info(f"Retrieved {len(data['response'])} fights for in season {season}.")
 
-        for game in data['response']:
+        for fight in data['response']:
             try:
-                if game['status']['long'] != 'Finished':
-                    logging.info(f"Skipping game ID {game['id']} as it is not finished (status: {game['status']['long']}).")
+                if fight['status']['long'] != 'Finished':
+                    logging.info(f"Skipping fight ID {fight['id']} as it is not finished (status: {fight['status']['long']}).")
                     continue
 
-                self.game_snapshots_repository.insert_game_snapshot('nba', season, game['id'], game['date']['start'], game['status']['long'], game['teams']['home']['id'], game['teams']['visitors']['id'], game['scores']['home']['points'], game['scores']['visitors']['points'], 'sports-api')
-                logging.info(f"Inserted game ID {game['id']} into the database.")
+                self.game_snapshots_repository.insert_game_snapshot('ufc', season, fight['id'], fight['date'], fight['status']['long'], 0, 0, 0, 0, 'sports-api')
+                logging.info(f"Inserted fight ID {fight['id']} into the database.")
             except Exception as e:
-                logging.error(f"Error inserting game ID {game['id']}: {e}")
+                logging.error(f"Error inserting fight ID {fight['id']}: {e}")
                 raise e
 
     async def get_stats_from_game(self, season: int):
 
-        players = self.player_snapshots_repository.get_all_player_snapshots(season=season, sport_key='nba')
+        players = self.player_snapshots_repository.get_all_player_snapshots(season=season, sport_key='ufc')
 
 
         players_dict = [
             {
                 "player_id": player[2],
             }
-            for player in players if player[0] == 'nba'
+            for player in players if player[0] == 'ufc'
         ]
 
         for player in players_dict:
@@ -112,7 +93,7 @@ class NBAPlayerStatsIngestor():
                     print(t)
                     
                     self.players_games_snapshots_repository.insert_player_game_snapshot(
-                        'nba',
+                        'ufc',
                         season,
                         stat['game']['id'],
                         player['player_id'],

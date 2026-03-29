@@ -3,6 +3,7 @@ from services.props_ingestor.prop_ingestor_interface import PropIngestorInterfac
 from services.player_stats_ingestor.player_stats_ingestor_interface import PlayerStatsIngestorInterface
 from services.event_ingestor.event_ingestor_interface import EventIngestorInterface
 import logging
+from analytics.prop_hit_rate_calculator import PropHitRateCalculatorInterface
 
 logging = logging.getLogger(__name__)
 
@@ -14,12 +15,13 @@ class PipelineRunner():
             self,
             props_ingestor: PropIngestorInterface,
             player_stats_ingestor: PlayerStatsIngestorInterface,
-            event_ingestor: EventIngestorInterface
+            event_ingestor: EventIngestorInterface,
+            prop_hit_rate_calculator: PropHitRateCalculatorInterface
     ):
         self.props_ingestor = props_ingestor
         self.player_stats_ingestor = player_stats_ingestor
         self.event_ingestor = event_ingestor
-
+        self.prop_hit_rate_calculator = prop_hit_rate_calculator
     async def run_props_pipeline(self, sport: str, hours: int, markets: list, region: str):
         """
         Runs the entire pipeline for ingesting daily prop data. This method orchestrates the process of retrieving prop data from the sports stats API and storing it in the database. It can be scheduled to run at regular intervals (e.g., daily) to ensure that the prop data is always up-to-date.
@@ -30,22 +32,21 @@ class PipelineRunner():
         self.props_ingestor.insert_transformed_props(transformed_props)
         logging.info("Props ingestion pipeline completed.")
 
-
-    async def run_team_pipeline(self, season: int):
+    async def run_team_pipeline(self):
         """
         Runs the entire pipeline for ingesting team data. This method orchestrates the process of retrieving team data from the sports stats API and storing it in the database. It can be scheduled to run at regular intervals (e.g., daily) to ensure that the team data is always up-to-date.
         """
         logging.info("Starting team ingestion pipeline...")
-        await self.player_stats_ingestor.ingest_teams(season=season)
+        await self.player_stats_ingestor.ingest_teams()
 
         logging.info("Team ingestion pipeline completed.")
 
-    async def run_players_pipeline(self, team: int, season: int):
+    async def run_players_pipeline(self, season: int):
         """
         Runs the entire pipeline for ingesting player data. This method orchestrates the process of retrieving player data from the sports stats API and storing it in the database. It can be scheduled to run at regular intervals (e.g., daily) to ensure that the player data is always up-to-date.
         """
         logging.info("Starting player ingestion pipeline...")
-        await self.player_stats_ingestor.get_players_on_team(team=team, season=season)
+        await self.player_stats_ingestor.get_players_on_team(season=season)
 
         logging.info("Player ingestion pipeline completed.")
 
@@ -58,14 +59,24 @@ class PipelineRunner():
 
         logging.info("Game ingestion pipeline completed.")
 
-    async def run_player_stats_pipeline(self, season: int, player: int):
+    async def run_player_stats_pipeline(self, season: int):
         """
         Runs the entire pipeline for ingesting player stats data. This method orchestrates the process of retrieving player stats data from the sports stats API and storing it in the database. It can be scheduled to run at regular intervals (e.g., daily) to ensure that the player stats data is always up-to-date.
         """
         logging.info("Starting player stats ingestion pipeline...")
-        await self.player_stats_ingestor.get_stats_from_game(season=season, player=player)
+        await self.player_stats_ingestor.get_stats_from_game(season=season)
 
         logging.info("Player stats ingestion pipeline completed.")
+
+    async def run_hit_rates_pipeline(self):
+        """
+        Runs the entire pipeline for calculating hit rates. This method orchestrates the process of retrieving prop data and player stats data from the database, calculating hit rates, and storing the results back in the database. It can be scheduled to run at regular intervals (e.g., daily) to ensure that the hit rates are always up-to-date.
+        """
+        logging.info("Starting hit rates pipeline...")
+        self.prop_hit_rate_calculator.run()
+        logging.info("Hit rates pipeline completed.")
+
+
 
 
     

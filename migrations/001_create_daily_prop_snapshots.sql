@@ -20,10 +20,7 @@ CREATE TABLE IF NOT EXISTS daily_prop_snapshots (
     price INT,
     provider TEXT NOT NULL,
 
-    PRIMARY KEY (
-        snapshot_ts, sport_key, event_id, book_key, market_key,
-        COALESCE(player_key,''), outcome_name, COALESCE(line, -999999), provider
-    )
+   PRIMARY KEY (snapshot_ts, sport_key, event_id, player_key, market_key, outcome_name, provider)
 );
 
 -- Find latest odds for a specific player/market
