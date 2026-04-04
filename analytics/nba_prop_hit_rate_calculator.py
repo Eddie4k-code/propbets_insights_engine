@@ -132,9 +132,6 @@ class NBAPropHitRateCalculator(PropHitRateCalculatorInterface):
         
         # Calculate the hit rate for the prop type based on the player's performance in those n games
 
-        prop_type_to_stat_mapping = {
-            'player_points': 'player_points'
-        }
 
         columns = [
             'sport_key',

@@ -3,6 +3,7 @@ from repositories.team_snapshots_repository_interface import TeamSnapshotsReposi
 from repositories.player_snapshots_repository_interface import PlayerSnapshotsRepositoryInterface
 from repositories.game_snapshots_repository_interface import GameSnapshotsRepositoryInterface
 from repositories.players_games_snapshots_repository_interface import PlayersGamesSnapshotsRepositoryInterface
+from repositories.mlb_players_games_snapshots_repository_interface import MLBPlayersGamesSnapshotsRepositoryInterface
 from services.sports_stats_api.sports_stats_api_interface import SportsStatsAPIInterface
 import logging
 
@@ -15,7 +16,7 @@ class MLBPlayerStatsIngestor():
             team_snapshots_repository: TeamSnapshotsRepositoryInterface,
             player_snapshots_repository: PlayerSnapshotsRepositoryInterface,    
             game_snapshots_repository: GameSnapshotsRepositoryInterface,
-            players_games_snapshots_repository: PlayersGamesSnapshotsRepositoryInterface
+            players_games_snapshots_repository: MLBPlayersGamesSnapshotsRepositoryInterface
         ):
         self.sports_stats_api = sports_stats_api
         self.team_snapshots_repository = team_snapshots_repository
@@ -81,11 +82,11 @@ class MLBPlayerStatsIngestor():
             except Exception as e:
                 logging.error(f"Error inserting game ID {game['id']}: {e}")
                 raise e
-    # Need to do thids
+            
+    # Need to do this
     async def get_stats_from_game(self, season: int):
 
         players = self.player_snapshots_repository.get_all_player_snapshots(season=season, sport_key='mlb')
-
 
         players_dict = [
             {
@@ -99,43 +100,75 @@ class MLBPlayerStatsIngestor():
             data = await self.sports_stats_api.get_players_stats_from_game(player=player['player_id'], season=season)
             logging.info(f"Retrieved stats for player ID {player['player_id']} in season {season}.")
 
-            # In the future, we should only get stats from games that are within the past x timeframe this way we don't have to iterate over as many games.
 
             print(data)
 
-            for stat in data['response']:
+            for stat in data['data']:
                 try:
                     self.players_games_snapshots_repository.insert_player_game_snapshot(
-                        'mlb',
-                        season,
-                        stat['game']['id'],
-                        player['player_id'],
-                        stat['team']['id'],
-                        stat['pos'],
-                        stat['min'],
-                        stat['points'],
-                        stat['fgm'],
-                        stat['fga'],
-                        float(stat['fgp']) if stat['fgp'] not in (None, '', '--') else None,
-                        stat['ftm'],
-                        stat['fta'],
-                        float(stat['ftp']) if stat['ftp'] not in (None, '', '--') else None,
-                        stat['tpm'],
-                        stat['tpa'],
-                        float(stat['tpp']) if stat['tpp'] not in (None, '', '--') else None,
-                        stat['offReb'],
-                        stat['defReb'],
-                        stat['totReb'],
-                        stat['assists'],
-                        stat['pFouls'],
-                        stat['steals'],
-                        stat['turnovers'],
-                        stat['blocks'],
-                        int(stat['plusMinus']) if stat['plusMinus'] not in (None, '', '--') else None,
-                        'balldontlie'
+                        sport_key='mlb',
+                        season=season,
+                        game_id=stat['game_id'],
+                        player_id=player['player_id'],
+                        team_name=stat['team_name'],
+                        at_bats=stat['at_bats'],
+                        runs=stat['runs'],
+                        hits=stat['hits'],
+                        rbi=stat['rbi'],
+                        hr=stat['hr'],
+                        bb=stat['bb'],
+                        k=stat['k'],
+                        avg=stat['avg'],
+                        obp=stat['obp'],
+                        slg=stat['slg'],
+                        doubles=stat['doubles'],
+                        triples=stat['triples'],
+                        intentional_walks=stat['intentional_walks'],
+                        hit_by_pitch=stat['hit_by_pitch'],
+                        stolen_bases=stat['stolen_bases'],
+                        caught_stealing=stat['caught_stealing'],
+                        plate_appearances=stat['plate_appearances'],
+                        total_bases=stat['total_bases'],
+                        left_on_base=stat['left_on_base'],
+                        fly_outs=stat['fly_outs'],
+                        ground_outs=stat['ground_outs'],
+                        line_outs=stat['line_outs'],
+                        pop_outs=stat['pop_outs'],
+                        air_outs=stat['air_outs'],
+                        gidp=stat['gidp'],
+                        sac_bunts=stat['sac_bunts'],
+                        sac_flies=stat['sac_flies'],
+                        ip=stat['ip'],
+                        p_hits=stat['p_hits'],
+                        p_runs=stat['p_runs'],
+                        er=stat['er'],
+                        p_bb=stat['p_bb'],
+                        p_k=stat['p_k'],
+                        p_hr=stat['p_hr'],
+                        pitch_count=stat['pitch_count'],
+                        strikes=stat['strikes'],
+                        era=stat['era'],
+                        batters_faced=stat['batters_faced'],
+                        pitching_outs=stat['pitching_outs'],
+                        wins=stat['wins'],
+                        losses=stat['losses'],
+                        saves=stat['saves'],
+                        holds=stat['holds'],
+                        blown_saves=stat['blown_saves'],
+                        games_started=stat['games_started'],
+                        wild_pitches=stat['wild_pitches'],
+                        balks=stat['balks'],
+                        pitching_hbp=stat['pitching_hbp'],
+                        inherited_runners=stat['inherited_runners'],
+                        inherited_runners_scored=stat['inherited_runners_scored'],
+                        putouts=stat['putouts'],
+                        assists=stat['assists'],
+                        errors=stat['errors'],
+                        fielding_chances=stat['fielding_chances'],
+                        fielding_pct=stat['fielding_pct'],
+                        provider='balldontlie'
                     )
-
-                    logging.info(f"Inserted stats for player ID {player['player_id']} in game ID {stat['game']['id']} into the database.")
+                    logging.info(f"Inserted stats for player ID {player['player_id']} in game ID {stat['game_id']} into the database.")
                 except Exception as e:
                     logging.error(f"Error inserting stats for player ID {player} in season {season}: {e}")
                     raise e
