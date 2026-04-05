@@ -10,6 +10,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
+
 class MLBPlayerStatsIngestor():
     def __init__(
             self, sports_stats_api: SportsStatsAPIInterface,  
@@ -70,9 +72,9 @@ class MLBPlayerStatsIngestor():
         Ingests MLB Games for a given season into the database. Retrieves game data from the sports stats API and stores it in the game snapshots repository. Only games with a status of "Finished" are ingested to ensure that complete data is stored.
         """
         data = await self.sports_stats_api.get_games_from_season(season=season)
-        logging.info(f"Retrieved {len(data['response'])} games for in season {season}.")
+        logging.info(f"Retrieved {len(data['data'])} games for in season {season}.")
 
-        for game in data['response']:
+        for game in data['data']:
             try:
                 if game['status'] != 'STATUS_FINAL':
                     logging.info(f"Skipping game ID {game['id']} as it is not finished (status: {game['status']}).")
