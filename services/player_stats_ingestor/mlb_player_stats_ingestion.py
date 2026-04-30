@@ -10,8 +10,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
-
 class MLBPlayerStatsIngestor():
     def __init__(
             self, sports_stats_api: SportsStatsAPIInterface,  
@@ -79,6 +77,11 @@ class MLBPlayerStatsIngestor():
                 if game['status'] != 'STATUS_FINAL':
                     logging.info(f"Skipping game ID {game['id']} as it is not finished (status: {game['status']}).")
                     continue
+                if game['scoring_summary'] is None or len(game['scoring_summary']) == 0:
+                    logging.info(f"Skipping game ID {game['id']} as it has no scoring summary.")
+                    continue
+
+
                 self.game_snapshots_repository.insert_game_snapshot('mlb', season, game['id'], game['date'], game['status'], game['home_team']['id'], game['away_team']['id'], game['scoring_summary'][len(game['scoring_summary']) - 1]["away_score"], game['scoring_summary'][len(game['scoring_summary']) - 1]["home_score"], 'balldontlie')
                 logging.info(f"Inserted game ID {game['id']} into the database.")
             except Exception as e:
@@ -98,11 +101,8 @@ class MLBPlayerStatsIngestor():
         ]
 
         for player in players_dict:
-
             data = await self.sports_stats_api.get_players_stats_from_game(player=player['player_id'], season=season)
             logging.info(f"Retrieved stats for player ID {player['player_id']} in season {season}.")
-
-
             print(data)
 
             for stat in data['data']:
@@ -113,61 +113,61 @@ class MLBPlayerStatsIngestor():
                         game_id=stat['game_id'],
                         player_id=player['player_id'],
                         team_name=stat['team_name'],
-                        at_bats=stat['at_bats'],
-                        runs=stat['runs'],
-                        hits=stat['hits'],
-                        rbi=stat['rbi'],
-                        hr=stat['hr'],
-                        bb=stat['bb'],
-                        k=stat['k'],
-                        avg=stat['avg'],
-                        obp=stat['obp'],
-                        slg=stat['slg'],
-                        doubles=stat['doubles'],
-                        triples=stat['triples'],
-                        intentional_walks=stat['intentional_walks'],
-                        hit_by_pitch=stat['hit_by_pitch'],
-                        stolen_bases=stat['stolen_bases'],
-                        caught_stealing=stat['caught_stealing'],
-                        plate_appearances=stat['plate_appearances'],
-                        total_bases=stat['total_bases'],
-                        left_on_base=stat['left_on_base'],
-                        fly_outs=stat['fly_outs'],
-                        ground_outs=stat['ground_outs'],
-                        line_outs=stat['line_outs'],
-                        pop_outs=stat['pop_outs'],
-                        air_outs=stat['air_outs'],
-                        gidp=stat['gidp'],
-                        sac_bunts=stat['sac_bunts'],
-                        sac_flies=stat['sac_flies'],
-                        ip=stat['ip'],
-                        p_hits=stat['p_hits'],
-                        p_runs=stat['p_runs'],
-                        er=stat['er'],
-                        p_bb=stat['p_bb'],
-                        p_k=stat['p_k'],
-                        p_hr=stat['p_hr'],
-                        pitch_count=stat['pitch_count'],
-                        strikes=stat['strikes'],
-                        era=stat['era'],
-                        batters_faced=stat['batters_faced'],
-                        pitching_outs=stat['pitching_outs'],
-                        wins=stat['wins'],
-                        losses=stat['losses'],
-                        saves=stat['saves'],
-                        holds=stat['holds'],
-                        blown_saves=stat['blown_saves'],
-                        games_started=stat['games_started'],
-                        wild_pitches=stat['wild_pitches'],
-                        balks=stat['balks'],
-                        pitching_hbp=stat['pitching_hbp'],
-                        inherited_runners=stat['inherited_runners'],
-                        inherited_runners_scored=stat['inherited_runners_scored'],
-                        putouts=stat['putouts'],
-                        assists=stat['assists'],
-                        errors=stat['errors'],
-                        fielding_chances=stat['fielding_chances'],
-                        fielding_pct=stat['fielding_pct'],
+                        at_bats=stat.get('at_bats') if stat.get('at_bats') is not None else 0,
+                        runs=stat.get('runs') if stat.get('runs') is not None else 0,
+                        hits=stat.get('hits') if stat.get('hits') is not None else 0,
+                        rbi=stat.get('rbi') if stat.get('rbi') is not None else 0,
+                        hr=stat.get('hr') if stat.get('hr') is not None else 0,
+                        bb=stat.get('bb') if stat.get('bb') is not None else 0,
+                        k=stat.get('k') if stat.get('k') is not None else 0,
+                        avg=stat.get('avg') if stat.get('avg') is not None else 0,
+                        obp=stat.get('obp') if stat.get('obp') is not None else 0,
+                        slg=stat.get('slg') if stat.get('slg') is not None else 0,
+                        doubles=stat.get('doubles') if stat.get('doubles') is not None else 0,
+                        triples=stat.get('triples') if stat.get('triples') is not None else 0,
+                        intentional_walks=stat.get('intentional_walks') if stat.get('intentional_walks') is not None else 0,
+                        hit_by_pitch=stat.get('hit_by_pitch') if stat.get('hit_by_pitch') is not None else 0,
+                        stolen_bases=stat.get('stolen_bases') if stat.get('stolen_bases') is not None else 0,
+                        caught_stealing=stat.get('caught_stealing') if stat.get('caught_stealing') is not None else 0,
+                        plate_appearances=stat.get('plate_appearances') if stat.get('plate_appearances') is not None else 0,
+                        total_bases=stat.get('total_bases') if stat.get('total_bases') is not None else 0,
+                        left_on_base=stat.get('left_on_base') if stat.get('left_on_base') is not None else 0,
+                        fly_outs=stat.get('fly_outs') if stat.get('fly_outs') is not None else 0,
+                        ground_outs=stat.get('ground_outs') if stat.get('ground_outs') is not None else 0,
+                        line_outs=stat.get('line_outs') if stat.get('line_outs') is not None else 0,
+                        pop_outs=stat.get('pop_outs') if stat.get('pop_outs') is not None else 0,
+                        air_outs=stat.get('air_outs') if stat.get('air_outs') is not None else 0,
+                        gidp=stat.get('gidp') if stat.get('gidp') is not None else 0,
+                        sac_bunts=stat.get('sac_bunts') if stat.get('sac_bunts') is not None else 0,
+                        sac_flies=stat.get('sac_flies') if stat.get('sac_flies') is not None else 0,
+                        ip=stat.get('ip') if stat.get('ip') is not None else 0,
+                        p_hits=stat.get('p_hits') if stat.get('p_hits') is not None else 0,
+                        p_runs=stat.get('p_runs') if stat.get('p_runs') is not None else 0,
+                        er=stat.get('er') if stat.get('er') is not None else 0,
+                        p_bb=stat.get('p_bb') if stat.get('p_bb') is not None else 0,
+                        p_k=stat.get('p_k') if stat.get('p_k') is not None else 0,
+                        p_hr=stat.get('p_hr') if stat.get('p_hr') is not None else 0,
+                        pitch_count=stat.get('pitch_count') if stat.get('pitch_count') is not None else 0,
+                        strikes=stat.get('strikes') if stat.get('strikes') is not None else 0,
+                        era=stat.get('era') if stat.get('era') is not None else 0,
+                        batters_faced=stat.get('batters_faced') if stat.get('batters_faced') is not None else 0,
+                        pitching_outs=stat.get('pitching_outs') if stat.get('pitching_outs') is not None else 0,
+                        wins=stat.get('wins') if stat.get('wins') is not None else 0,
+                        losses=stat.get('losses') if stat.get('losses') is not None else 0,
+                        saves=stat.get('saves') if stat.get('saves') is not None else 0,
+                        holds=stat.get('holds') if stat.get('holds') is not None else 0,
+                        blown_saves=stat.get('blown_saves') if stat.get('blown_saves') is not None else 0,
+                        games_started=stat.get('games_started') if stat.get('games_started') is not None else 0,
+                        wild_pitches=stat.get('wild_pitches') if stat.get('wild_pitches') is not None else 0,
+                        balks=stat.get('balks') if stat.get('balks') is not None else 0,
+                        pitching_hbp=stat.get('pitching_hbp') if stat.get('pitching_hbp') is not None else 0,
+                        inherited_runners=stat.get('inherited_runners') if stat.get('inherited_runners') is not None else 0,
+                        inherited_runners_scored=stat.get('inherited_runners_scored') if stat.get('inherited_runners_scored') is not None else 0,
+                        putouts=stat.get('putouts') if stat.get('putouts') is not None else 0,
+                        assists=stat.get('assists') if stat.get('assists') is not None else 0,
+                        errors=stat.get('errors') if stat.get('errors') is not None else 0,
+                        fielding_chances=stat.get('fielding_chances') if stat.get('fielding_chances') is not None else 0,
+                        fielding_pct=stat.get('fielding_pct') if stat.get('fielding_pct') is not None else 0,
                         provider='balldontlie'
                     )
                     logging.info(f"Inserted stats for player ID {player['player_id']} in game ID {stat['game_id']} into the database.")

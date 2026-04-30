@@ -7,8 +7,6 @@ import logging
 from repositories.nba_hit_rate_snapshots_repository_interface import NBAHitRateSnapshotsRepositoryInterface
 import itertools
 
-logging = logging.getLogger(__name__)
-
 class NBAPropHitRateCalculator(PropHitRateCalculatorInterface):
     
     def __init__(self, player_games_snapshots_repository: PlayersGamesSnapshotsRepositoryInterface, prop_snapshots_repository: PostgresPropSnapshotsRepositoryInterface, player_snapshots_repository: PlayerSnapshotsRepositoryInterface, hit_rate_snapshots_repository: NBAHitRateSnapshotsRepositoryInterface):
@@ -68,42 +66,46 @@ class NBAPropHitRateCalculator(PropHitRateCalculatorInterface):
 
     def calculate_hit_rates(self, props):
         for prop in props:
-            player_name = prop['player_name']
-            prop_type = prop['market_key']
-            line = prop['line']
-            event_start_time = prop['event_start_time']
-            outcome_name = prop['outcome_name']
-            price = prop['price']
-            book_key = prop['book_key']
-            market_last_update = prop['market_last_update']
-            sport_key = prop['sport_key']
+            try:
+                player_name = prop['player_name']
+                prop_type = prop['market_key']
+                line = prop['line']
+                event_start_time = prop['event_start_time']
+                outcome_name = prop['outcome_name']
+                price = prop['price']
+                book_key = prop['book_key']
+                market_last_update = prop['market_last_update']
+                sport_key = prop['sport_key']
 
-            last_10_game_hit_rate = self.calculate_n_game_hit_rate(player_name, prop_type, line, 10, event_start_time, outcome_name)
-            last_30_game_hit_rate = self.calculate_n_game_hit_rate(player_name, prop_type, line, 30, event_start_time, outcome_name)
-            last_60_game_hit_rate = self.calculate_n_game_hit_rate(player_name, prop_type, line, 60, event_start_time, outcome_name)
+                last_10_game_hit_rate = self.calculate_n_game_hit_rate(player_name, prop_type, line, 10, event_start_time, outcome_name)
+                last_30_game_hit_rate = self.calculate_n_game_hit_rate(player_name, prop_type, line, 30, event_start_time, outcome_name)
+                last_60_game_hit_rate = self.calculate_n_game_hit_rate(player_name, prop_type, line, 60, event_start_time, outcome_name)
 
-            # Calculate the edge for this particular prop based on the hit rates and the price
-            edge = self.calculate_edge(hit_rates={
-                'hit_rate_10_game': last_10_game_hit_rate,
-                'hit_rate_30_game': last_30_game_hit_rate,
-                'hit_rate_60_game': last_60_game_hit_rate
-            }, price=price)
-            
-            # AVOID PUTTING BAD Data
-            if last_10_game_hit_rate == None and last_30_game_hit_rate == None and last_60_game_hit_rate == None:
-                logging.info(f"Skipping player: {player_name}, prop type: {prop_type}, line: {line}, outcome: {outcome_name}, event start time: {event_start_time} due to all hit rates being 0")
+                # Calculate the edge for this particular prop based on the hit rates and the price
+                edge = self.calculate_edge(hit_rates={
+                    'hit_rate_10_game': last_10_game_hit_rate,
+                    'hit_rate_30_game': last_30_game_hit_rate,
+                    'hit_rate_60_game': last_60_game_hit_rate
+                }, price=price)
+                
+                # AVOID PUTTING BAD Data
+                if last_10_game_hit_rate == None and last_30_game_hit_rate == None and last_60_game_hit_rate == None:
+                    logging.info(f"Skipping player: {player_name}, prop type: {prop_type}, line: {line}, outcome: {outcome_name}, event start time: {event_start_time} due to all hit rates being 0")
+                    continue
+
+
+                logging.info(f"Calculated hit rates for player: {player_name}, prop type: {prop_type}, line: {line}, outcome: {outcome_name}, event start time: {event_start_time}. Last 10 game hit rate: {last_10_game_hit_rate}, Last 30 game hit rate: {last_30_game_hit_rate}, Last 60 game hit rate: {last_60_game_hit_rate}")
+
+                logging.info(f"Calculating Tier based on hit rates for player: {player_name}, prop type: {prop_type}, line: {line}, outcome: {outcome_name}, event start time: {event_start_time}")
+
+                tier_result = self.calculate_tier(last_10_game_hit_rate, last_30_game_hit_rate, last_60_game_hit_rate)
+
+                self.insert_hit_rate_into_db(player_name, prop_type, line, event_start_time, outcome_name, price, book_key, market_last_update, last_10_game_hit_rate, last_30_game_hit_rate, last_60_game_hit_rate, sport_key, edge, tier_result['tier'], tier_result['recently_hot'])
+
+                logging.info(f"Inserted hit rates into DB for player: {player_name}, prop type: {prop_type}, line: {line}, outcome: {outcome_name}, event start time: {event_start_time}")
+            except Exception as e:
+                logging.error(f"Error calculating hit rates for player: {prop['player_name']}, prop type: {prop['market_key']}, line: {prop['line']}, outcome: {prop['outcome_name']}, event start time: {prop['event_start_time']}. Error: {e.with_traceback(e.__traceback__)}")
                 continue
-
-
-            logging.info(f"Calculated hit rates for player: {player_name}, prop type: {prop_type}, line: {line}, outcome: {outcome_name}, event start time: {event_start_time}. Last 10 game hit rate: {last_10_game_hit_rate}, Last 30 game hit rate: {last_30_game_hit_rate}, Last 60 game hit rate: {last_60_game_hit_rate}")
-
-            logging.info(f"Calculating Tier based on hit rates for player: {player_name}, prop type: {prop_type}, line: {line}, outcome: {outcome_name}, event start time: {event_start_time}")
-
-            tier_result = self.calculate_tier(last_10_game_hit_rate, last_30_game_hit_rate, last_60_game_hit_rate)
-
-            self.insert_hit_rate_into_db(player_name, prop_type, line, event_start_time, outcome_name, price, book_key, market_last_update, last_10_game_hit_rate, last_30_game_hit_rate, last_60_game_hit_rate, sport_key, edge, tier_result['tier'], tier_result['recently_hot'])
-
-            logging.info(f"Inserted hit rates into DB for player: {player_name}, prop type: {prop_type}, line: {line}, outcome: {outcome_name}, event start time: {event_start_time}")
 
     def calculate_n_game_hit_rate(self, player_name, prop_type, line, n, event_start_time, outcome_name):
         # Find the users player id
@@ -121,17 +123,12 @@ class NBAPropHitRateCalculator(PropHitRateCalculatorInterface):
         logging.info(f"Found player id {player_id} for player {player_name}")
         # Query the players_games_snapshots_repository for the latest n games for the player
         games = self.player_games_snapshots_repository.get_player_game_snapshots_latest(player_id, 'nba')
+
+
         logging.info(f"Found {len(games)} games for player {player_name} with player id {player_id}")
 
-        # Player may not have played n games, so we need to account for that. If they have not played any games, we should return None or some indication that we cannot calculate a hit rate.
-        if len(games) < n:
-            return None
 
-        n_games = games[:n] 
-
-        
         # Calculate the hit rate for the prop type based on the player's performance in those n games
-
 
         columns = [
             'sport_key',
@@ -168,31 +165,41 @@ class NBAPropHitRateCalculator(PropHitRateCalculatorInterface):
             'plus_minus',
             'provider'
         ]
+
         dict_games = []
-        for game in n_games:
+        for game in games:
             stat_dict = {col: game[idx] for idx, col in enumerate(columns)}
             dict_games.append(stat_dict)
 
+        games_filtered_dnp = [game for game in dict_games if game['minutes'] != 0]
+
+        # If the player did not play in at least n games, we cannot calculate a hit rate, so we return None
+        if len(games_filtered_dnp) < n:
+            logging.info(f"Player {player_name} did not play in at least {n} games, cannot calculate hit rate for prop type {prop_type}, line {line}, outcome {outcome_name}. Returning None.")
+            return None
+
+        games_n = games_filtered_dnp[:n]
+
         if prop_type == 'player_points':
-             return self.points_hit_rate(dict_games, line, n, event_start_time, outcome_name)
+             return self.points_hit_rate(games_n, line, n, event_start_time, outcome_name)
         
         elif prop_type == 'player_rebounds':
-             return self.rebounds_hit_rate(dict_games, line, n, event_start_time, outcome_name)
+             return self.rebounds_hit_rate(games_n, line, n, event_start_time, outcome_name)
 
         elif prop_type == 'player_threes':
-             return self.threes_hit_rate(dict_games, line, n, event_start_time, outcome_name)
+             return self.threes_hit_rate(games_n, line, n, event_start_time, outcome_name)
         
         elif prop_type == 'player_assists':
-             return self.assists_hit_rate(dict_games, line, n, event_start_time, outcome_name)
+             return self.assists_hit_rate(games_n, line, n, event_start_time, outcome_name)
         
         elif prop_type == 'player_blocks':
-            return self.blocks_hit_rate(dict_games, line, n, event_start_time, outcome_name)
+            return self.blocks_hit_rate(games_n, line, n, event_start_time, outcome_name)
         
         elif prop_type == 'player_turnovers':
-            return self.turnovers_hit_rate(dict_games, line, n, event_start_time, outcome_name)
+            return self.turnovers_hit_rate(games_n, line, n, event_start_time, outcome_name)
         
         elif prop_type == 'player_steals':
-            return self.steals_hit_rate(dict_games, line, n, event_start_time, outcome_name)
+            return self.steals_hit_rate(games_n, line, n, event_start_time, outcome_name)
     
         else:
             return None
@@ -206,6 +213,10 @@ class NBAPropHitRateCalculator(PropHitRateCalculatorInterface):
                 logging.info(f"Player did not play in game {game}, skipping...")
                 continue
             player_points_that_game = games[game]['points']
+
+            if player_points_that_game is None:
+                player_points_that_game = 0
+
             logging.info(f"Player scored {player_points_that_game} points in game {game}")
             
             if outcome_name == "over" and player_points_that_game > line:
@@ -223,10 +234,10 @@ class NBAPropHitRateCalculator(PropHitRateCalculatorInterface):
         logging.info(f"Calculating rebounds hit rate for line: {line}, outcome: {outcome_name}, n: {n} games")
 
         for game in range(0, n):
-            if games[game]['minutes'] == 0:
-                logging.info(f"Player did not play in game {game}, skipping...")
-                continue
             player_rebounds_that_game = games[game]['total_rebounds']
+            if player_rebounds_that_game is None:
+                player_rebounds_that_game = 0
+                
             logging.info(f"Player had {player_rebounds_that_game} rebounds in game {game}")
 
             if outcome_name == "over" and player_rebounds_that_game > line:
@@ -245,10 +256,9 @@ class NBAPropHitRateCalculator(PropHitRateCalculatorInterface):
         logging.info(f"Calculating assists hit rate for line: {line}, outcome: {outcome_name}, n: {n} games")
 
         for game in range(0, n):
-            if games[game]['minutes'] == 0:
-                logging.info(f"Player did not play in game {game}, skipping...")
-                continue
             player_assists_that_game = games[game]['assists']
+            if player_assists_that_game is None:
+                player_assists_that_game = 0
             logging.info(f"Player had {player_assists_that_game} assists in game {game}")
 
             if outcome_name == "over" and player_assists_that_game > line:
@@ -259,7 +269,6 @@ class NBAPropHitRateCalculator(PropHitRateCalculatorInterface):
         hit_rate = hits / n if n > 0 else 0
 
         return hit_rate
-    
 
     def threes_hit_rate(self, games, line, n, event_start_time, outcome_name):
         hits = 0
@@ -267,10 +276,9 @@ class NBAPropHitRateCalculator(PropHitRateCalculatorInterface):
         logging.info(f"Calculating threes hit rate for line: {line}, outcome: {outcome_name}, n: {n} games")
 
         for game in range(0, n):
-            if games[game]['minutes'] == 0:
-                logging.info(f"Player did not play in game {game}, skipping...")
-                continue
             player_threes_that_game = games[game]['three_pointers_made']
+            if player_threes_that_game is None:
+                player_threes_that_game = 0
             logging.info(f"Player made {player_threes_that_game} three-pointers in game {game}")
 
             if outcome_name == "over" and player_threes_that_game > line:
@@ -287,10 +295,10 @@ class NBAPropHitRateCalculator(PropHitRateCalculatorInterface):
         logging.info(f"Calculating blocks hit rate for line: {line}, outcome: {outcome_name}, n: {n} games")
 
         for game in range(0, n):
-            if games[game]['minutes'] == 0:
-                logging.info(f"Player did not play in game {game}, skipping...")
-                continue
             player_blocks_that_game = games[game]['blocks']
+            if player_blocks_that_game is None:
+                player_blocks_that_game = 0
+
             logging.info(f"Player had {player_blocks_that_game} blocks in game {game}")
 
             if outcome_name == "over" and player_blocks_that_game > line:
@@ -309,10 +317,9 @@ class NBAPropHitRateCalculator(PropHitRateCalculatorInterface):
         logging.info(f"Calculating turnovers hit rate for line: {line}, outcome: {outcome_name}, n: {n} games")
 
         for game in range(0, n):
-            if games[game]['minutes'] == 0:
-                logging.info(f"Player did not play in game {game}, skipping...")
-                continue
             player_turnovers_that_game = games[game]['turnovers']
+            if player_turnovers_that_game is None:
+                player_turnovers_that_game = 0
             logging.info(f"Player had {player_turnovers_that_game} turnovers in game {game}")
 
             if outcome_name == "over" and player_turnovers_that_game > line:
@@ -331,10 +338,9 @@ class NBAPropHitRateCalculator(PropHitRateCalculatorInterface):
         logging.info(f"Calculating steals hit rate for line: {line}, outcome: {outcome_name}, n: {n} games")
 
         for game in range(0, n):
-            if games[game]['minutes'] == 0:
-                logging.info(f"Player did not play in game {game}, skipping...")
-                continue
             player_steals_that_game = games[game]['steals']
+            if player_steals_that_game is None:
+                player_steals_that_game = 0
             logging.info(f"Player had {player_steals_that_game} steals in game {game}")
 
             if outcome_name == "over" and player_steals_that_game > line:
@@ -450,4 +456,8 @@ class NBAPropHitRateCalculator(PropHitRateCalculatorInterface):
 
     def run(self):
         props = self.grab_props()
-        self.calculate_hit_rates(props)
+        try:
+            self.calculate_hit_rates(props)
+        except Exception as e:
+            logging.error(f"Error calculating hit rates: {e.with_traceback(e.__traceback__)}")
+            raise e

@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS player_snapshots (
    first_name TEXT NOT NULL,
    last_name TEXT NOT NULL,
    provider TEXT NOT NULL,
+   custom_player_id TEXT NOT NULL,
    PRIMARY KEY (sport_key, season, first_name, last_name, provider)
 );
 

@@ -5,8 +5,6 @@ from services.event_ingestor.event_ingestor_interface import EventIngestorInterf
 import logging
 from analytics.prop_hit_rate_calculator import PropHitRateCalculatorInterface
 
-logging = logging.getLogger(__name__)
-
 class PipelineRunner():
     """
     The PipelineRunner class is responsible for orchestrating the execution of various data ingestion pipelines. It serves as a central point for running different pipelines related to prop data, team data, player data, game data, and player stats data. Each method in this class corresponds to a specific pipeline and ensures that the necessary steps are executed in the correct order. This design allows for easy scheduling and management of data ingestion tasks, ensuring that the database remains up-to-date with the latest information from the sports stats API.

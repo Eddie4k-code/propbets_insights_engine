@@ -29,8 +29,8 @@ class MLBStatsAPI(SportsStatsAPIInterface):
         data = await self._fetch_all_pages(self.config.base_url + "/players", params={"team_ids[]": team})
         return data
 
-    async def get_games_from_season(self, team, season):
-        data = await self._fetch_all_pages(self.config.base_url + "/games", params={"team_ids[]": team, "seasons[]": season})
+    async def get_games_from_season(self, season):
+        data = await self._fetch_all_pages(self.config.base_url + "/games", params={"seasons[]": season})
         return data
 
     async def get_players_stats_from_game(self, player, season):

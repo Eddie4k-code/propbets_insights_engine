@@ -133,6 +133,8 @@ class PropIngestor(PropIngestorInterface):
         filtered_props = []
 
         for event in props:
+            bookie_keys = [b.get("key") for b in event.get("bookmakers", [])]
+            logger.info(f"Event {event.get('id')}: bookmakers present = {bookie_keys}, allowed = {allowed_bookies}")
             filtered_event = {
                 "event_id": event.get("id"),
                 "sport_key": event.get("sport_key"),
